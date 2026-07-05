@@ -1,0 +1,71 @@
+openapi: 3.0.3
+
+info:
+  title: Гончарная мастерская API — Profile
+  description: >-
+    Профиль клиента: просмотр и смена имени. Часть клиентского API для мобильного
+    приложения мастерской.
+  version: 1.0.0
+
+servers:
+  - url: https://api.pottery.example/v1
+    description: Production — продакшен-окружение
+  - url: https://staging-api.pottery.example/v1
+    description: Staging — тестовое окружение
+
+tags:
+  - name: Profile
+    description: Профиль клиента
+
+security:
+  - bearerAuth: []
+
+paths:
+  /profile:
+    get:
+      tags:
+        - Profile
+      summary: Получить профиль
+      operationId: getProfile
+      description: Данные текущего клиента.
+      responses:
+        '200':
+          description: Профиль клиента
+          content:
+            application/json:
+              schema:
+                $ref: 'models.yaml#/components/schemas/Client'
+        '401':
+          $ref: '../common/models.yaml#/components/responses/Unauthorized'
+        default:
+          $ref: '../common/models.yaml#/components/responses/InternalError'
+    patch:
+      tags:
+        - Profile
+      summary: Обновить имя
+      operationId: updateProfile
+      description: Смена имени клиента.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'models.yaml#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Обновлённый профиль клиента
+          content:
+            application/json:
+              schema:
+                $ref: 'models.yaml#/components/schemas/Client'
+        '400':
+          $ref: '../common/models.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: '../common/models.yaml#/components/responses/Unauthorized'
+        default:
+          $ref: '../common/models.yaml#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: '../auth/models.yaml#/components/securitySchemes/bearerAuth'

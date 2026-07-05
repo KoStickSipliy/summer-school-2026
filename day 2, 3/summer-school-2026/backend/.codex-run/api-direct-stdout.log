@@ -1,0 +1,1 @@
+{"time":"2026-07-05T14:32:21.8056356+03:00","level":"ERROR","msg":"failed to connect database","error":"ping postgres: failed to connect to `user=volna database=volna`: 172.19.0.2:5432 (172.19.0.2): failed to receive message: read tcp 172.18.0.1:56737->172.19.0.2:5432: wsarecv: An existing connection was forcibly closed by the remote host."}

@@ -1,0 +1,281 @@
+# Сквозные объекты: общая схема ошибки, метаданные пагинации, переиспользуемые
+# параметры запроса и типовые ответы-ошибки.
+
+components:
+  schemas:
+    Error:
+      type: object
+      description: Стандартное тело ошибки.
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: >-
+            Канонический машинный код ошибки. Доменные коды: slot_full, double_booking,
+            slot_cancelled, slot_started, already_cancelled, invalid_code,
+            idempotency_key_conflict. Общие: bad_request, unauthorized, forbidden,
+            not_found, too_many_requests, internal_error.
+          enum:
+            - slot_full
+            - double_booking
+            - slot_cancelled
+            - slot_started
+            - already_cancelled
+            - invalid_code
+            - idempotency_key_conflict
+            - bad_request
+            - unauthorized
+            - forbidden
+            - not_found
+            - too_many_requests
+            - internal_error
+          example: slot_full
+        message:
+          type: string
+          description: Человекочитаемое сообщение об ошибке.
+          example: Свободных мест больше нет.
+        details:
+          type: object
+          description: >-
+            Необязательные машиночитаемые детали для динамических сообщений на клиенте.
+          properties:
+            available_seats:
+              type: integer
+              description: Сколько мест реально свободно на момент ошибки.
+              example: 2
+
+    PaginationMeta:
+      type: object
+      description: Метаданные постраничной выдачи.
+      required:
+        - limit
+        - offset
+        - total
+      properties:
+        limit:
+          type: integer
+          description: Размер страницы.
+          example: 20
+        offset:
+          type: integer
+          description: Смещение от начала выборки.
+          example: 0
+        total:
+          type: integer
+          description: Общее число элементов.
+          example: 42
+
+  parameters:
+    LimitParam:
+      in: query
+      name: limit
+      required: false
+      description: Максимальное число элементов в выдаче
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    OffsetParam:
+      in: query
+      name: offset
+      required: false
+      description: Смещение от начала выдачи
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    SlotIdParam:
+      in: path
+      name: slotId
+      required: true
+      description: Идентификатор слота
+      schema:
+        type: string
+        format: uuid
+
+    BookingIdParam:
+      in: path
+      name: bookingId
+      required: true
+      description: Идентификатор бронирования
+      schema:
+        type: string
+        format: uuid
+
+    BookingStatusParam:
+      in: query
+      name: status
+      required: false
+      style: form
+      explode: true
+      description: >-
+        Фильтр броней по статусу (множественный выбор). Без параметра возвращаются
+        брони всех статусов, включая cancelled и late_cancel.
+      schema:
+        type: array
+        items:
+          type: string
+          enum:
+            - active
+            - cancelled
+            - late_cancel
+            - club_cancelled
+
+    DateFromParam:
+      in: query
+      name: date_from
+      required: false
+      description: >-
+        Фильтр: слоты со стартом не раньше указанного момента (граница включительна).
+        По умолчанию — текущий момент.
+      schema:
+        type: string
+        format: date-time
+
+    DateToParam:
+      in: query
+      name: date_to
+      required: false
+      description: >-
+        Фильтр: слоты со стартом не позже указанного момента (граница включительна).
+        По умолчанию — date_from + 7 дней.
+      schema:
+        type: string
+        format: date-time
+
+    RouteTypeParam:
+      in: query
+      name: route_type
+      required: false
+      style: form
+      explode: true
+      description: >-
+        Тип маршрута (множественный выбор). Значения внутри группы объединяются
+        по OR; между разными фильтрами — AND.
+      schema:
+        type: array
+        items:
+          type: string
+          enum:
+            - novice
+            - experienced
+
+    InstructorIdParam:
+      in: query
+      name: instructor_id
+      required: false
+      style: form
+      explode: true
+      description: Идентификаторы мастеров (множественный выбор).
+      schema:
+        type: array
+        items:
+          type: string
+          format: uuid
+
+    OnlyAvailableParam:
+      in: query
+      name: only_available
+      required: false
+      description: Только слоты со свободными местами (free_seats > 0).
+      schema:
+        type: boolean
+        default: false
+
+  responses:
+    BadRequest:
+      description: Неверные параметры запроса.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: bad_request
+            message: Неверные параметры запроса. Проверьте корректность переданных значений.
+
+    Unauthorized:
+      description: Отсутствует или неверен токен авторизации.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: unauthorized
+            message: Требуется авторизация. Передайте действительный токен в заголовке Authorization.
+
+    Forbidden:
+      description: Попытка доступа к чужим данным.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: forbidden
+            message: Доступ запрещён. Вы не можете обращаться к данным другого клиента.
+
+    NotFound:
+      description: Запрашиваемый ресурс не найден.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: not_found
+            message: Запрашиваемый ресурс не найден.
+
+    Conflict:
+      description: Нарушение инварианта — нет свободных мест, повторная бронь, повторная отмена или конфликт идемпотентности.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: slot_full
+            message: На выбранном занятии не осталось свободных мест.
+            details:
+              available_seats: 0
+
+    Gone:
+      description: Слот отменён мастерской; повторная запись недоступна.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: slot_cancelled
+            message: Занятие отменено мастерской.
+
+    UnprocessableEntity:
+      description: Семантически корректный запрос, который не может быть выполнен.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: slot_started
+            message: Отмена недоступна после начала занятия.
+
+    TooManyRequests:
+      description: Слишком много запросов.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: too_many_requests
+            message: Слишком много запросов. Попробуйте позже.
+
+    InternalError:
+      description: Внутренняя ошибка сервера.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: internal_error
+            message: Внутренняя ошибка сервера.

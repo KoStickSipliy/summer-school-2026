@@ -1,0 +1,14 @@
+{
+  "name": "pottery-api-docs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Клиентское API гончарной мастерской (многофайловый OpenAPI)",
+  "scripts": {
+    "lint": "redocly lint",
+    "preview": "redocly preview-docs",
+    "bundle": "redocly bundle auth -o dist/auth.yaml && redocly bundle slots -o dist/slots.yaml && redocly bundle bookings -o dist/bookings.yaml && redocly bundle profile -o dist/profile.yaml && redocly bundle instructors -o dist/instructors.yaml"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^1.34.0"
+  }
+}

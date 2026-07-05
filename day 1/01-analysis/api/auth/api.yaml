@@ -1,0 +1,173 @@
+openapi: 3.0.3
+
+info:
+  title: Гончарная мастерская API — Auth
+  description: >-
+    Аутентификация клиента по номеру телефона с подтверждением одноразовым кодом
+    (OTP). Часть клиентского API для мобильного приложения мастерской.
+  version: 1.0.0
+
+servers:
+  - url: https://api.pottery.example/v1
+    description: Production — продакшен-окружение
+  - url: https://staging-api.pottery.example/v1
+    description: Staging — тестовое окружение
+
+tags:
+  - name: Auth
+    description: Аутентификация по телефону и OTP
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/request-code:
+    post:
+      tags:
+        - Auth
+      summary: Запросить код подтверждения (OTP)
+      operationId: requestAuthCode
+      description: >-
+        Отправляет одноразовый код на номер телефона по SMS (шаг входа/регистрации).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'models.yaml#/components/schemas/RequestCodeRequest'
+      responses:
+        '200':
+          description: Код успешно отправлен
+          content:
+            application/json:
+              schema:
+                $ref: 'models.yaml#/components/schemas/RequestCodeResponse'
+        '400':
+          $ref: '../common/models.yaml#/components/responses/BadRequest'
+        '429':
+          $ref: '../common/models.yaml#/components/responses/TooManyRequests'
+        default:
+          $ref: '../common/models.yaml#/components/responses/InternalError'
+
+  /auth/verify-code:
+    post:
+      tags:
+        - Auth
+      summary: Подтвердить код и войти/зарегистрироваться
+      operationId: verifyAuthCode
+      description: >-
+        Проверяет код и возвращает пару токенов сессии, профиль клиента и флаг is_new.
+        Имя клиента можно передать в этом же запросе при первичной регистрации.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'models.yaml#/components/schemas/VerifyCodeRequest'
+      responses:
+        '200':
+          description: Успешный вход; is_new=true если зарегистрирован новый клиент
+          content:
+            application/json:
+              schema:
+                $ref: 'models.yaml#/components/schemas/VerifyCodeResponse'
+        '400':
+          $ref: '../common/models.yaml#/components/responses/BadRequest'
+        '429':
+          $ref: '../common/models.yaml#/components/responses/TooManyRequests'
+        default:
+          $ref: '../common/models.yaml#/components/responses/InternalError'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Обновить токен сессии
+      operationId: refreshToken
+      description: Обменивает действительный refresh-токен на новую пару access + refresh.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'models.yaml#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Выдана новая пара токенов
+          content:
+            application/json:
+              schema:
+                $ref: 'models.yaml#/components/schemas/TokenPair'
+        '400':
+          $ref: '../common/models.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: '../common/models.yaml#/components/responses/Unauthorized'
+        default:
+          $ref: '../common/models.yaml#/components/responses/InternalError'
+
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Выход
+      operationId: logout
+      description: Завершает текущую сессию и инвалидирует refresh-токен.
+      responses:
+        '204':
+          description: Сессия завершена
+        '401':
+          $ref: '../common/models.yaml#/components/responses/Unauthorized'
+        default:
+          $ref: '../common/models.yaml#/components/responses/InternalError'
+
+  /auth/push-tokens:
+    post:
+      tags:
+        - Auth
+      summary: Зарегистрировать push-токен
+      operationId: registerPushToken
+      description: Регистрирует токен push-уведомлений устройства для текущего клиента.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'models.yaml#/components/schemas/PushTokenRequest'
+      responses:
+        '204':
+          description: Push-токен зарегистрирован/обновлён
+        '400':
+          $ref: '../common/models.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: '../common/models.yaml#/components/responses/Unauthorized'
+        default:
+          $ref: '../common/models.yaml#/components/responses/InternalError'
+    delete:
+      tags:
+        - Auth
+      summary: Удалить push-токен
+      operationId: deletePushToken
+      description: Снимает регистрацию push-токена устройства.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'models.yaml#/components/schemas/PushTokenDeleteRequest'
+      responses:
+        '204':
+          description: Push-токен удалён
+        '401':
+          $ref: '../common/models.yaml#/components/responses/Unauthorized'
+        '404':
+          $ref: '../common/models.yaml#/components/responses/NotFound'
+        default:
+          $ref: '../common/models.yaml#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: 'models.yaml#/components/securitySchemes/bearerAuth'

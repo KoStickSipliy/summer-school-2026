@@ -1,0 +1,49 @@
+openapi: 3.0.3
+
+info:
+  title: Гончарная мастерская API — Instructors
+  description: >-
+    Справочник мастеров и маршрутов (read-only) для фильтрации и отображения
+    карточек занятий. Часть клиентского API для мобильного приложения мастерской.
+  version: 1.0.0
+
+servers:
+  - url: https://api.pottery.example/v1
+    description: Production — продакшен-окружение
+  - url: https://staging-api.pottery.example/v1
+    description: Staging — тестовое окружение
+
+tags:
+  - name: Instructors
+    description: Справочник мастеров
+
+security:
+  - bearerAuth: []
+
+paths:
+  /instructors:
+    get:
+      tags:
+        - Instructors
+      summary: Справочник мастеров
+      operationId: listInstructors
+      description: Список мастеров для фильтрации по занятиям.
+      parameters:
+        - $ref: '../common/models.yaml#/components/parameters/LimitParam'
+        - $ref: '../common/models.yaml#/components/parameters/OffsetParam'
+      responses:
+        '200':
+          description: Список мастеров
+          content:
+            application/json:
+              schema:
+                $ref: 'models.yaml#/components/schemas/InstructorListResponse'
+        '401':
+          $ref: '../common/models.yaml#/components/responses/Unauthorized'
+        default:
+          $ref: '../common/models.yaml#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: '../auth/models.yaml#/components/securitySchemes/bearerAuth'

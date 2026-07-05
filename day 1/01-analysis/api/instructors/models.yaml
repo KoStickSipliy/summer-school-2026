@@ -1,0 +1,112 @@
+# Маршрут и мастер — справочные объекты (read-only) + список мастеров.
+
+components:
+  schemas:
+    RouteType:
+      type: string
+      description: Тип маршрута — новичковый или опытный.
+      enum:
+        - novice
+        - experienced
+
+    Geometry:
+      description: Геометрия маршрута для отрисовки линии на карте.
+      oneOf:
+        - type: array
+          description: Массив координат точек маршрута.
+          items:
+            type: array
+            description: Координата в виде пары [lat, lng].
+            minItems: 2
+            maxItems: 2
+            items:
+              type: number
+        - type: string
+          description: Закодированная полилиния (encoded polyline).
+
+    RouteSummary:
+      type: object
+      description: Краткое представление маршрута для списков слотов.
+      required:
+        - id
+        - name
+        - type
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор маршрута.
+        name:
+          type: string
+          description: Название маршрута.
+          example: Тихие каналы
+        type:
+          $ref: '#/components/schemas/RouteType'
+
+    Route:
+      type: object
+      description: Маршрут занятия. Справочник, доступен только для чтения.
+      required:
+        - id
+        - name
+        - type
+        - capacity_cap
+        - duration_min
+        - geometry
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор маршрута.
+        name:
+          type: string
+          description: Название маршрута.
+          example: Тихие каналы
+        description:
+          type: string
+          nullable: true
+          description: Описательный текст маршрута/занятия для карточки слота.
+          example: Спокойное занятие для знакомства с основами гончарного дела.
+        type:
+          $ref: '#/components/schemas/RouteType'
+        capacity_cap:
+          type: integer
+          description: Потолок числа мест на маршруте.
+          example: 8
+        duration_min:
+          type: integer
+          description: Продолжительность занятия в минутах.
+          example: 90
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+
+    Instructor:
+      type: object
+      description: Мастер, ведущий занятие.
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор мастера.
+        name:
+          type: string
+          description: Имя мастера.
+          example: Мария
+
+    InstructorListResponse:
+      type: object
+      description: Постраничный список мастеров.
+      required:
+        - items
+        - meta
+      properties:
+        items:
+          type: array
+          description: Элементы списка мастеров.
+          items:
+            $ref: '#/components/schemas/Instructor'
+        meta:
+          $ref: '../common/models.yaml#/components/schemas/PaginationMeta'

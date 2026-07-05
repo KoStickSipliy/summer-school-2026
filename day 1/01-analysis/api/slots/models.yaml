@@ -1,0 +1,154 @@
+# Слот занятия — read-only-проекция и его представления.
+
+components:
+  schemas:
+    SlotStatus:
+      type: string
+      description: Статус слота.
+      enum:
+        - scheduled
+        - cancelled
+
+    Slot:
+      type: object
+      description: >-
+        Полная карточка слота. Доступна только для чтения. Статус «Прошедшая» —
+        производное значение по полю start_at, отдельным статусом не хранится.
+      required:
+        - id
+        - start_at
+        - route
+        - instructor
+        - total_seats
+        - free_seats
+        - free_rental_kits
+        - price
+        - rental_price
+        - meeting_point
+        - meeting_point_lat
+        - meeting_point_lng
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор слота.
+        start_at:
+          type: string
+          format: date-time
+          description: Дата и время начала занятия.
+        route:
+          $ref: '../instructors/models.yaml#/components/schemas/Route'
+        instructor:
+          $ref: '../instructors/models.yaml#/components/schemas/Instructor'
+        total_seats:
+          type: integer
+          minimum: 1
+          description: Общее число мест в слоте.
+          example: 8
+        free_seats:
+          type: integer
+          minimum: 0
+          description: Число свободных мест.
+          example: 5
+        free_rental_kits:
+          type: integer
+          minimum: 0
+          description: Число свободных комплектов проката от мастерской.
+          example: 3
+        price:
+          type: integer
+          minimum: 0
+          description: Цена занятия за одного клиента, в рублях.
+          example: 2500
+        rental_price:
+          type: integer
+          minimum: 0
+          description: Тариф проката за один комплект, в рублях.
+          example: 500
+        meeting_point:
+          type: string
+          description: Адрес или ориентир места встречи.
+          example: Мастерская на Лесной, 12
+        meeting_point_lat:
+          type: number
+          format: float
+          description: Широта места встречи.
+          example: 59.978
+        meeting_point_lng:
+          type: number
+          format: float
+          description: Долгота места встречи.
+          example: 30.262
+        status:
+          $ref: '#/components/schemas/SlotStatus'
+
+    SlotSummary:
+      type: object
+      description: Урезанное представление слота для списка.
+      required:
+        - id
+        - start_at
+        - route
+        - instructor
+        - price
+        - rental_price
+        - total_seats
+        - free_seats
+        - free_rental_kits
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор слота.
+        start_at:
+          type: string
+          format: date-time
+          description: Дата и время начала занятия.
+        route:
+          $ref: '../instructors/models.yaml#/components/schemas/RouteSummary'
+        instructor:
+          $ref: '../instructors/models.yaml#/components/schemas/Instructor'
+        price:
+          type: integer
+          minimum: 0
+          description: Цена занятия за одного клиента, в рублях.
+          example: 2500
+        rental_price:
+          type: integer
+          minimum: 0
+          description: Тариф проката за один комплект, в рублях.
+          example: 500
+        total_seats:
+          type: integer
+          minimum: 1
+          description: Общее число мест в слоте.
+          example: 8
+        free_seats:
+          type: integer
+          minimum: 0
+          description: Число свободных мест.
+          example: 5
+        free_rental_kits:
+          type: integer
+          minimum: 0
+          description: Число свободных комплектов проката от мастерской.
+          example: 3
+        status:
+          $ref: '#/components/schemas/SlotStatus'
+
+    SlotListResponse:
+      type: object
+      description: Постраничный список слотов.
+      required:
+        - items
+        - meta
+      properties:
+        items:
+          type: array
+          description: Элементы списка слотов.
+          items:
+            $ref: '#/components/schemas/SlotSummary'
+        meta:
+          $ref: '../common/models.yaml#/components/schemas/PaginationMeta'

@@ -1,0 +1,166 @@
+# Бронь и её представления.
+
+components:
+  schemas:
+    BookingStatus:
+      type: string
+      description: >-
+        Статус брони. late_cancel — поздняя отмена; club_cancelled — бронь
+        отменена мастерской вместе со слотом.
+      enum:
+        - active
+        - cancelled
+        - late_cancel
+        - club_cancelled
+
+    EquipmentMode:
+      type: string
+      description: Способ участия клиента в занятии.
+      enum:
+        - own
+        - rental
+
+    CreateBookingRequest:
+      type: object
+      description: Запрос на создание брони. Клиент записывается только на себя.
+      required:
+        - slot_id
+        - equipment_mode
+      properties:
+        slot_id:
+          type: string
+          format: uuid
+          description: Идентификатор слота.
+        equipment_mode:
+          $ref: '#/components/schemas/EquipmentMode'
+
+    Booking:
+      type: object
+      description: >-
+        Полные данные брони для экрана деталей. Тарифы и доступность берутся из
+        связанного slot; на уровне брони присутствует только производное поле
+        price_total.
+      required:
+        - id
+        - slot_id
+        - client_id
+        - equipment_mode
+        - status
+        - price_total
+        - created_at
+        - slot
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор брони.
+        slot_id:
+          type: string
+          format: uuid
+          description: Идентификатор слота, на который оформлена бронь.
+        client_id:
+          type: string
+          format: uuid
+          description: Идентификатор клиента.
+        equipment_mode:
+          $ref: '#/components/schemas/EquipmentMode'
+        status:
+          $ref: '#/components/schemas/BookingStatus'
+        price_total:
+          type: integer
+          description: >-
+            Производное поле только для чтения, в рублях. Клиент не пересчитывает
+            цену самостоятельно.
+          readOnly: true
+          example: 3000
+        created_at:
+          type: string
+          format: date-time
+          description: Дата и время создания брони.
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Дата и время отмены, если бронь была отменена.
+        cancellation_reason:
+          type: string
+          nullable: true
+          readOnly: true
+          description: Причина отмены от мастерской, если она пришла от бэкенда.
+        slot:
+          $ref: '../slots/models.yaml#/components/schemas/Slot'
+
+    CreateBookingResponse:
+      type: object
+      description: Ответ на создание брони.
+      allOf:
+        - $ref: '#/components/schemas/Booking'
+        - type: object
+          required:
+            - is_first_booking
+          properties:
+            is_first_booking:
+              type: boolean
+              description: true, если это первая успешная бронь клиента.
+              example: true
+
+    BookingSummary:
+      type: object
+      description: Урезанное представление брони для списка.
+      required:
+        - id
+        - slot_id
+        - equipment_mode
+        - status
+        - price_total
+        - created_at
+        - slot
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор брони.
+        slot_id:
+          type: string
+          format: uuid
+          description: Идентификатор слота.
+        equipment_mode:
+          $ref: '#/components/schemas/EquipmentMode'
+        status:
+          $ref: '#/components/schemas/BookingStatus'
+        price_total:
+          type: integer
+          description: Производное поле только для чтения, в рублях.
+          readOnly: true
+          example: 3000
+        created_at:
+          type: string
+          format: date-time
+          description: Дата и время создания брони.
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Дата и время отмены, если бронь была отменена.
+        cancellation_reason:
+          type: string
+          nullable: true
+          readOnly: true
+          description: Причина отмены от мастерской, если она пришла от бэкенда.
+        slot:
+          $ref: '../slots/models.yaml#/components/schemas/SlotSummary'
+
+    BookingListResponse:
+      type: object
+      description: Постраничный список броней.
+      required:
+        - items
+        - meta
+      properties:
+        items:
+          type: array
+          description: Элементы списка броней.
+          items:
+            $ref: '#/components/schemas/BookingSummary'
+        meta:
+          $ref: '../common/models.yaml#/components/schemas/PaginationMeta'
